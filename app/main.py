@@ -25,19 +25,30 @@ class CarWashStation:
 
     def serve_cars(self, cars: list[Car]) -> float:
         income = 0.0
+        skipped_cars = []
 
         for car in cars:
             if car.clean_mark < self.clean_power:
-                income += self.calculate_washing_price(car)
+                price = self.calculate_washing_price(car)
+                income += price
                 self.wash_single_car(car)
+            else:
+                skipped_cars.append(car)
+
+        self.handle_skipped_cars(skipped_cars)
 
         return round(income, 1)
 
     def calculate_washing_price(self, car: Car) -> float:
+        valid_distance = self.validate_distance()
+
+        if valid_distance is None:
+            return 0
+
         cleaning_difficulty = self.clean_power - car.clean_mark
         price = (
             car.comfort_class * cleaning_difficulty * self.average_rating
-        ) / self.distance_from_city_center
+        ) / valid_distance
 
         return round(price, 1)
 
@@ -51,3 +62,22 @@ class CarWashStation:
             / self.count_of_ratings,
             1
         )
+
+    @staticmethod
+    def handle_skipped_cars(skipped_cars: list[Car]) -> None:
+        if not skipped_cars:
+            return
+
+        car_brands = [car.brand for car in skipped_cars]
+        car_brands_str = ", ".join(car_brands)
+        print(f"These cars did not need washing: {car_brands_str}")
+
+    def validate_distance(self) -> float | None:
+        if self.distance_from_city_center == 0:
+            print(
+                "Warning: Invalid distance from city center (0). "
+                "Cannot calculate price."
+            )
+            return None
+
+        return self.distance_from_city_center
